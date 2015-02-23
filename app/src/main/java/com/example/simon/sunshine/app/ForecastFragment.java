@@ -1,5 +1,6 @@
 package com.example.simon.sunshine.app;
 
+import android.content.Intent;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
@@ -12,6 +13,7 @@ import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
+import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 
@@ -29,6 +31,7 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+
 
 /**
  * Created by Simon on 08/02/2015.
@@ -91,7 +94,21 @@ public  class ForecastFragment extends Fragment {
         ListView listView = (ListView)rootView.findViewById(
                 R.id.listView_forecast);
         listView.setAdapter(mForecastAdapter);
+        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+            @Override
+        public void onItemClick(AdapterView<?> adapterView, View view, int position, long l) {
+            //Context context = getActivity();
+                String forecast = mForecastAdapter.getItem(position);
+                Intent intent = new Intent(getActivity(),
+                       DetailActivity.class).putExtra(Intent.EXTRA_TEXT,forecast);
+                startActivity(intent) ;
+                //int duration = Toast.LENGTH_SHORT;
+                //Toast toast = Toast.makeText(context, text, duration);
+                //toast.show();
 
+            }
+
+});
         return rootView;
     }
 
@@ -107,7 +124,7 @@ public  class ForecastFragment extends Fragment {
         //noinspection SimplifiableIfStatement
         if (id == R.id.action_refresh) {
             FetchWeatherTask weatherTask = new FetchWeatherTask();
-            weatherTask.execute("94043");
+            weatherTask.execute("CT20 3QA");
             return true;
         }
 
@@ -147,7 +164,6 @@ public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
             uribuild.appendQueryParameter("units", "metric");
             uribuild.appendQueryParameter("cnt", "7");
             URL testurl = new URL(uribuild.build().toString());
-            Log.v(LOG_TAG, "URI built: " + testurl );
             URL url = new URL("http://api.openweathermap.org/data/2.5/forecast/daily?q=94043&mode=json&units=metric&cnt=7");
 
             // Create the request to OpenWeatherMap, and open the connection
@@ -180,8 +196,6 @@ public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
             }
             forecastJsonStr = buffer.toString();
 
-
-            Log.v(LOG_TAG, "Forecast JSON String: " + forecastJsonStr);
         } catch (IOException e) {
             Log.e(LOG_TAG, "Error ", e);
             // If the code didn't successfully get the weather data, there's no point in attempting
@@ -209,6 +223,17 @@ public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
 
         return null;
 
+    }
+
+    @Override
+    protected void onPostExecute(String[] result) {
+        if (result != null) {
+            mForecastAdapter.clear();
+            for (String dayForecast: result) {
+                mForecastAdapter.add(dayForecast);
+            }
+            super.onPostExecute(result);
+        }
     }
     /* The date/time conversion code is going to be moved outside the asynctask later,
  * so for convenience we're breaking it out into its own method now.
@@ -302,9 +327,7 @@ public class FetchWeatherTask extends AsyncTask<String, Void, String[]> {
             resultStrs[i] = day + " - " + description + " - " + highAndLow;
         }
 
-        for (String s : resultStrs) {
-            Log.v(LOG_TAG, "Forecast entry: " + s);
-        }
+
         return resultStrs;
 
     }
